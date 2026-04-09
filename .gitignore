@@ -18,3 +18,6 @@ splitstay-engine/credentials.json
 # IDE files
 .vscode/
 .idea/
+.env.example
+
+.venv
