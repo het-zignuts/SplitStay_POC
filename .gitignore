@@ -1,0 +1,25 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+venv/
+splitstay-engine/.env/
+
+# Runtime artifacts
+splitstay-engine/run.log
+splitstay-engine/last_run.txt
+
+# Secrets
+.env
+splitstay-engine/credentials.json
+
+# IDE files
+.vscode/
+.idea/
+.env.example
+
+.venv
+
+.DS_Store
