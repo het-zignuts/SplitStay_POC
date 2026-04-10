@@ -12,7 +12,7 @@ def _normalize(text: str) -> str:
 
 def _contains_phrase(text: str, phrase: str) -> bool:
     """Return whether a normalized phrase appears in normalized text."""
-    normalized_phrase = _normalize(phrase)
+    normalized_phrase = _normalize(phrase) # normalize the input phrase for consistent matching
     if not normalized_phrase:
         return False
     return f" {normalized_phrase} " in f" {text} "
@@ -20,13 +20,13 @@ def _contains_phrase(text: str, phrase: str) -> bool:
 
 def _dedupe_preserve_order(values: Iterable[str]) -> list[str]:
     """Remove duplicates while preserving the first-seen order."""
-    seen: set[str] = set()
-    unique_values: list[str] = []
+    seen: set[str] = set() # set initialized to maintain seen values for deduplication
+    unique_values: list[str] = [] # list initialized to store unique values while preserving order
     for value in values:
-        if value in seen:
+        if value in seen: # if the value has already been seen, skip it to avoid duplicates
             continue
-        seen.add(value)
-        unique_values.append(value)
+        seen.add(value) # add the value to the seen set to track it for future duplicates
+        unique_values.append(value) # append the unique value to the list to preserve order
     return unique_values
 
 
@@ -36,17 +36,19 @@ def is_relevant(
     keyword_groups: Iterable[Iterable[str]] | None = None,
 ) -> tuple[bool, list[str]]:
     """Return whether a post matches configured phrases or grouped keyword patterns."""
-    text = _normalize(f"{post.get('title', '')} {post.get('body', '')}")
+    text = _normalize(f"{post.get('title', '')} {post.get('body', '')}") # combine title and body of the post, normalize it for consistent matching
 
+    # Check for explicit phrase matches first, then grouped keyword patterns.
     matched_phrases = [
         phrase for phrase in keywords if phrase and _contains_phrase(text, phrase)
     ]
 
+    # Check for grouped keyword patterns.
     matched_groups: list[str] = []
     for group in keyword_groups or []:
-        normalized_group = [_normalize(part) for part in group if _normalize(part)]
-        if normalized_group and all(_contains_phrase(text, part) for part in normalized_group):
+        normalized_group = [_normalize(part) for part in group if _normalize(part)] # normalize keyword group values
+        if normalized_group and all(_contains_phrase(text, part) for part in normalized_group): # check if all parts of the normalized group are present in the text
             matched_groups.append(" + ".join(group))
 
-    matched = _dedupe_preserve_order([*matched_phrases, *matched_groups])
-    return len(matched) > 0, matched
+    matched = _dedupe_preserve_order([*matched_phrases, *matched_groups]) # combine matched phrases and groups, remove duplicates while preserving order
+    return len(matched) > 0, matched # return whether any matches were found along with the list of matched keywords/groups

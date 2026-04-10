@@ -1,72 +1,5 @@
-# """Subreddit groups and keyword constants used by the pipeline."""
-
-# # These groups drive subreddit scanning and provide the default category label.
-# SUBREDDITS = {
-#     "Music Festivals": ["festivals", "Coachella", "glastonbury", "bonnaroo", "electricdaisycarnival"],
-#     "Sports Events": ["formula1", "soccer", "nfl", "SuperBowl", "olympics"],
-#     "Pop Culture": ["concerts", "TaylorSwift", "comiccon", "beyonce"],
-#     "General Travel": ["travel", "solotravel", "couchsurfing", "digitalnomad"],
-#     # "Accommodation Sharing": ["airbnb", "hotels", "hostelworld", "travelpartners"],
-# }
-
-# KEYWORDS = {
-#     "Accommodation Sharing": [
-#         "share",
-#         "split",
-#         "room",
-#         "hotel",
-#         "airbnb",
-#         "accommodation",
-#         "booking",
-#         "condo",
-#         "apartment",
-#         "hostel",
-#     ],
-#     "Roommate Seeking": [
-#         "roommate",
-#         "roomie",
-#         "buddy",
-#         "partner",
-#         "travel",
-#         "share",
-#         "split",
-#         "looking",
-#         "need",
-#         "anyone",
-#     ],
-#     "Cost Sharing": [
-#         "cost",
-#         "costs",
-#         "expense",
-#         "expenses",
-#         "bill",
-#         "half",
-#         "halves",
-#         "share",
-#         "split",
-#         "price",
-#     ],
-#     "Open Invitations": [
-#         "anyone",
-#         "open",
-#         "join",
-#         "invite",
-#         "interested",
-#         "share",
-#         "split",
-#         "together",
-#         "with",
-#         "company",
-#     ],
-# }
-
-# # Precompute lowercase subreddit-to-category lookups for the ingestion loop.
-# CATEGORY_BY_SUBREDDIT = {
-#     subreddit.lower(): category
-#     for category, sub_list in SUBREDDITS.items()
-#     for subreddit in sub_list
-# }
-
+# The variable SUBREDDITS defines the target subreddits to monitor, categorized by event type, 
+# while KEYWORDS contains specific phrases to detect posts related to accommodation sharing. 
 SUBREDDITS = {
     "Music Festivals": [
         "festivals", "Coachella", "glastonbury", "bonnaroo", "electricdaisycarnival"
@@ -82,6 +15,8 @@ SUBREDDITS = {
     ]
 }
 
+# The KEYWORDS dictionary contains specific phrases that are commonly associated with accommodation sharing, roommate seeking, cost sharing, and open invitations. 
+# These phrases are used to identify relevant posts in the target subreddits.
 KEYWORDS = {
     "Accommodation Sharing": [
         "split hotel", "share hotel", "share airbnb", "split airbnb",
@@ -107,8 +42,12 @@ KEYWORDS = {
     ]
 }
 
+# ALL_KEYWORDS is a flattened list of all individual keywords extracted from the grouped KEYWORDS dictionary, 
+# which allows for straightforward matching against post content without needing to consider groupings.
 ALL_KEYWORDS = [kw for group in KEYWORDS.values() for kw in group]
 
+# KEYWORD_GROUPS is a list of keyword groups, where each group is a list of keywords.
+# We use group matching to identify posts that may not contain explicit phrases but still indicate relevance through the presence of multiple related keywords.
 KEYWORD_GROUPS = [
     ["share", "airbnb"],
     ["split", "airbnb"],

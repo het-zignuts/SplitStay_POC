@@ -17,6 +17,8 @@ class Settings:
     # Reddit public JSON API
     REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "SplitStayBot/1.0")
     REDDIT_REQUEST_TIMEOUT: int = int(os.getenv("REDDIT_REQUEST_TIMEOUT", "20"))
+    REDDIT_URL1: str = os.getenv("REDDIT_URL1", "https://www.reddit.com")
+    REDDIT_URL2: str = os.getenv("REDDIT_URL2", "https://old.reddit.com")
 
     # Google Sheets
     GOOGLE_SHEET_NAME: str = os.getenv("GOOGLE_SHEET_NAME")
