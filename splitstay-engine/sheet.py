@@ -19,13 +19,14 @@ class GoogleSheetService:
     - Append processed rows
     """
 
-    def __init__(self, credentials_path: str, sheet_name: str):
+    def __init__(self, credentials_path: str, sheet_name: str, worksheet_name: str = "Sheet1"):
         """
         Initialize Google Sheets client.
 
         Args:
             credentials_path (str): Path to credentials.json file
             sheet_name (str): Name of the Google Sheet
+            worksheet_name (str): Name of the worksheet tab inside the sheet
         """
 
         self.scope = [
@@ -39,9 +40,10 @@ class GoogleSheetService:
         )
 
         self.client = gspread.authorize(self.creds)
-        self.sheet = self.client.open(sheet_name).sheet1
+        workbook = self.client.open(sheet_name)
+        self.sheet = workbook.worksheet(worksheet_name)
 
-        logging.info("Connected to Google Sheet")
+        logging.info("Connected to Google Sheet: %s / %s", sheet_name, worksheet_name)
 
     def get_existing_urls(self) -> set:
         """
@@ -89,30 +91,6 @@ class GoogleSheetService:
             "New"
         ]
 
-    def is_duplicate(self, post_url: str) -> bool:
-        """
-        Check if given Post URL already exists in Google Sheet.
-
-        Args:
-            post_url (str): Reddit post URL
-
-        Returns:
-            bool: True if duplicate, False otherwise
-        """
-
-        try:
-            urls = self.sheet.col_values(4)
-            
-            for url in urls[1:]:
-                if url.strip() == post_url.strip():
-                    return True
-
-            return False
-
-        except Exception as e:
-            logging.error(f"Dedup check failed: {e}")
-            return False
-
     def append_rows(self, rows: list):
         """
         Append multiple rows to the Google Sheet.
@@ -126,7 +104,7 @@ class GoogleSheetService:
             return
 
         try:
-            self.sheet.append_rows(rows, value_input_option="RAW")
+            self.sheet.append_rows(rows, value_input_option="RAW", table_range="A1")
             logging.info(f"Inserted {len(rows)} rows into sheet")
         except Exception as e:
             logging.error(f"Failed to append rows: {e}")

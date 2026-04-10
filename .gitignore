@@ -21,3 +21,5 @@ splitstay-engine/credentials.json
 .env.example
 
 .venv
+
+.DS_Store
