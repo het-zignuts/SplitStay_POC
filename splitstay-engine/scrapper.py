@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Fetch recent Reddit posts through the public JSON endpoints."""
+
 from datetime import datetime
 import logging
 import time
@@ -9,12 +11,13 @@ import requests
 
 from config import settings
 
-BASE_REDDIT_URL = "https://www.reddit.com"
-FALLBACK_REDDIT_URL = "https://old.reddit.com"
-POST_LIMIT = int(settings.POST_LIMIT)
+BASE_REDDIT_URL = "https://www.reddit.com" # base url
+FALLBACK_REDDIT_URL = "https://old.reddit.com" # fallbcack url for reliability
+POST_LIMIT = int(settings.POST_LIMIT) # number of posts to fetch per subreddit
 
 
 def _normalize_url(permalink: str | None) -> str:
+    """Convert Reddit permalinks into absolute URLs."""
     if not permalink:
         return ""
 
@@ -25,6 +28,7 @@ def _normalize_url(permalink: str | None) -> str:
 
 
 def _parse_post(child: dict[str, Any], subreddit_name: str) -> dict[str, Any]:
+    """Extract the fields used by the pipeline from a Reddit listing item."""
     data = child.get("data", {})
 
     created_utc = data.get("created_utc")
@@ -44,6 +48,7 @@ def _parse_post(child: dict[str, Any], subreddit_name: str) -> dict[str, Any]:
 
 
 def get_posts(subreddit_name: str) -> list[dict[str, Any]]:
+    """Fetch recent posts for a subreddit, falling back between Reddit domains."""
     posts: list[dict[str, Any]] = []
     endpoints = [
         f"{BASE_REDDIT_URL}/r/{subreddit_name}/new.json",
@@ -66,6 +71,7 @@ def get_posts(subreddit_name: str) -> list[dict[str, Any]]:
 
         for endpoint in endpoints:
             try:
+                # Try both current and old Reddit JSON endpoints to improve reliability.
                 response = requests.get(
                     endpoint,
                     headers=headers,
@@ -90,6 +96,7 @@ def get_posts(subreddit_name: str) -> list[dict[str, Any]]:
                 continue
             posts.append(_parse_post(child, subreddit_name))
 
+        # Keep requests polite when scanning multiple subreddits in sequence.
         time.sleep(0.5)
 
     except requests.RequestException as exc:

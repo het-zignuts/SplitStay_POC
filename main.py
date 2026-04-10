@@ -4,7 +4,7 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, List
+from typing import Any, Iterable
 
 # Add engine directory to import path because folder name has a hyphen.
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -15,11 +15,11 @@ if str(ENGINE_DIR) not in sys.path:
 from filter import is_relevant
 from scrapper import get_posts
 from sheet import GoogleSheetService
-from subreddits import CATEGORY_BY_SUBREDDIT, KEYWORDS, SUBREDDITS
+from subreddits import ALL_KEYWORDS, KEYWORD_GROUPS, SUBREDDITS
 from config import settings
 
-
 def setup_logging() -> None:
+    """Configure file and console logging for the current run."""
     settings.LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
@@ -29,16 +29,8 @@ def setup_logging() -> None:
             logging.StreamHandler(sys.stdout),
         ],
     )
-
-
-def flatten_keywords(keywords_map: dict[str, list[str]]) -> List[str]:
-    all_keywords: List[str] = []
-    for values in keywords_map.values():
-        all_keywords.extend(values)
-    return [k.lower() for k in all_keywords]
-
-
 def load_last_run() -> datetime | None:
+    """Load the previous run timestamp when operating in incremental mode."""
     if settings.RUN_MODE == "FULL":
         return None
 
@@ -57,16 +49,19 @@ def load_last_run() -> datetime | None:
 
 
 def save_last_run(run_time: datetime) -> None:
+    """Persist the timestamp used as the next incremental-run cutoff."""
     settings.LAST_RUN_PATH.write_text(run_time.isoformat(), encoding="utf-8")
 
 
 def iter_subreddits(subreddits_map: dict[str, list[str]]) -> Iterable[tuple[str, str]]:
+    """Yield category and subreddit pairs from the configured mapping."""
     for category, names in subreddits_map.items():
         for name in names:
             yield category, name
 
 
 def main() -> int:
+    """Fetch relevant subreddit posts and append unseen matches to Google Sheets."""
     try:
         settings.validate()
     except Exception as exc:
@@ -75,7 +70,6 @@ def main() -> int:
 
     setup_logging()
     run_started_at = datetime.utcnow()
-    keyword_list = flatten_keywords(KEYWORDS)
 
     logging.info("Starting run in %s mode", settings.RUN_MODE)
 
@@ -94,6 +88,7 @@ def main() -> int:
     if cutoff:
         logging.info("NEW mode cutoff active: %s UTC", cutoff.isoformat())
 
+    # Track rows to append in one batch and avoid reprocessing URLs already stored.
     rows_to_insert: list[list[str | Any]] = []
     seen_urls = set(existing_urls)
 
@@ -110,24 +105,27 @@ def main() -> int:
         for post in posts:
             scanned_posts += 1
 
+            # In NEW mode, ignore posts that were already available on the last run.
             if cutoff and post["created"] <= cutoff:
                 skipped_old += 1
                 continue
 
             url = post.get("url", "")
+            # Skip empty URLs and anything already present in the sheet or this run.
             if not url or url in seen_urls:
                 skipped_duplicate += 1
                 continue
 
-            match, matched_keywords = is_relevant(post, keyword_list)
+            # Use both explicit phrase keywords and grouped word-pattern matches.
+            match, matched_keywords = is_relevant(post, ALL_KEYWORDS, KEYWORD_GROUPS)
+            # Only keep posts that match the configured keyword set.
             if not match:
                 skipped_keyword += 1
                 continue
 
             relevant_posts += 1
             seen_urls.add(url)
-            category = CATEGORY_BY_SUBREDDIT.get(subreddit_name.lower(), default_category)
-            rows_to_insert.append(sheet_service.format_row(post, matched_keywords, category))
+            rows_to_insert.append(sheet_service.format_row(post, matched_keywords, default_category))
 
     sheet_service.append_rows(rows_to_insert)
     save_last_run(run_started_at)
